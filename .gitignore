@@ -1,0 +1,24 @@
+# Виртуальное окружение
+.venv/
+venv/
+
+# Кеш Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Переменные окружения (там пароли!)
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log

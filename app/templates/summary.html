@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Сводка — Library Service{% endblock %}
+{% block heading %}Сводка по библиотеке{% endblock %}
+
+{% block content %}
+<div id="loading">Загрузка...</div>
+<div id="summary-block" style="display:none;">
+    <table>
+        <tr><th>Всего выдач</th><td id="s-total"></td></tr>
+        <tr><th>Активных (на руках)</th><td id="s-active"></td></tr>
+        <tr><th>Просрочено</th><td id="s-overdue" class="overdue"></td></tr>
+    </table>
+
+    <h2>Топ-10 книг по числу выдач</h2>
+    <table id="top-books-table">
+        <thead>
+            <tr><th>#</th><th>Название</th><th>Выдач</th></tr>
+        </thead>
+        <tbody id="top-books-body"></tbody>
+    </table>
+</div>
+
+<script>
+async function loadSummary() {
+    try {
+        const resp = await fetch('/api/summary', { credentials: 'same-origin' });
+        if (resp.status === 401) { window.location.href = '/login'; return; }
+        const data = await resp.json();
+        renderSummary(data);
+    } catch (e) {
+        document.getElementById('loading').textContent = 'Ошибка: ' + e;
+    }
+}
+
+function renderSummary(data) {
+    document.getElementById('s-total').textContent = data.total_loans;
+    document.getElementById('s-active').textContent = data.active_loans;
+    document.getElementById('s-overdue').textContent = data.overdue_loans;
+
+    const tbody = document.getElementById('top-books-body');
+    tbody.innerHTML = '';
+    if (data.top_books.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3">Пока нет данных.</td></tr>';
+    } else {
+        data.top_books.forEach((b, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${i + 1}</td><td>${b.title}</td><td>${b.loan_count}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('summary-block').style.display = 'block';
+}
+
+loadSummary();
+</script>
+{% endblock %}

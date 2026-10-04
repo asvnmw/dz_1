@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Library Service{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        nav { margin-bottom: 20px; padding: 10px; background: #f0f0f0; }
+        nav a { margin-right: 15px; }
+        table { border-collapse: collapse; margin-top: 10px; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+        th { background: #eee; }
+        .pagination { margin-top: 15px; }
+        .pagination a, .pagination span { margin-right: 10px; }
+        .filter { margin-bottom: 15px; padding: 10px; background: #fafafa; border: 1px solid #eee; }
+        .overdue { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/loans">Выдачи</a>
+        <a href="/summary">Сводка</a>
+        <a href="/docs">API документация</a>
+    </nav>
+
+    <h1>{% block heading %}{% endblock %}</h1>
+
+    {% block content %}{% endblock %}
+</body>
+</html>

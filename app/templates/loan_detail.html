@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Выдача {{ loan_id }} — Library Service{% endblock %}
+{% block heading %}Карточка выдачи{% endblock %}
+
+{% block content %}
+<div id="loading">Загрузка...</div>
+<div id="loan-card" style="display:none;">
+    <table>
+        <tr><th>ID</th><td id="f-id"></td></tr>
+        <tr><th>ID читателя</th><td><a id="f-reader" href="#"></a></td></tr>
+        <tr><th>ID экземпляра</th><td id="f-copy"></td></tr>
+        <tr><th>Дата выдачи</th><td id="f-issued"></td></tr>
+        <tr><th>Срок возврата</th><td id="f-due"></td></tr>
+        <tr><th>Дата возврата</th><td id="f-returned"></td></tr>
+        <tr><th>Просрочка (дней)</th><td id="f-overdue-days"></td></tr>
+        <tr><th>Штраф (руб.)</th><td id="f-fine"></td></tr>
+    </table>
+
+    <p style="margin-top:20px;">
+        <a href="/loans">← К списку выдач</a>
+    </p>
+</div>
+
+<script>
+const loanId = {{ loan_id }};
+
+async function loadLoan() {
+    try {
+        const resp = await fetch(`/api/loans/${loanId}`, { credentials: 'same-origin' });
+        if (resp.status === 401) { window.location.href = '/login'; return; }
+        if (resp.status === 404) {
+            document.getElementById('loading').textContent = 'Выдача не найдена.';
+            return;
+        }
+        const loan = await resp.json();
+        renderLoan(loan);
+    } catch (e) {
+        document.getElementById('loading').textContent = 'Ошибка: ' + e;
+    }
+}
+
+function renderLoan(loan) {
+    document.getElementById('f-id').textContent = loan.id;
+    const a = document.getElementById('f-reader');
+    a.textContent = loan.reader_id;
+    a.href = `/readers/${loan.reader_id}`;
+    document.getElementById('f-copy').textContent = loan.copy_id;
+    document.getElementById('f-issued').textContent = loan.issued_at;
+    document.getElementById('f-due').textContent = loan.due_at;
+    document.getElementById('f-returned').textContent = loan.returned_at || '—';
+    document.getElementById('f-overdue-days').textContent = loan.overdue_days;
+    document.getElementById('f-fine').textContent = loan.fine_amount;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('loan-card').style.display = 'block';
+}
+
+loadLoan();
+</script>
+{% endblock %}

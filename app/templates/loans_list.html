@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Выдачи — Library Service{% endblock %}
+{% block heading %}Список выдач{% endblock %}
+
+{% block content %}
+<div class="filter">
+    <label>Читатель ID: <input type="number" id="filter-reader" min="1"></label>
+    <label><input type="checkbox" id="filter-active"> Только активные</label>
+    <button onclick="applyFilter()">Применить</button>
+    <button onclick="resetFilter()">Сбросить</button>
+</div>
+
+<div id="loading">Загрузка...</div>
+<table id="loans-table" style="display:none;">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Читатель</th>
+            <th>Экземпляр</th>
+            <th>Выдана</th>
+            <th>Срок возврата</th>
+            <th>Возвращена</th>
+            <th>Статус</th>
+        </tr>
+    </thead>
+    <tbody id="loans-body"></tbody>
+</table>
+
+<div class="pagination" id="pagination"></div>
+
+<script>
+let currentPage = 1;
+const pageSize = 20;
+
+async function loadLoans(page = 1) {
+    currentPage = page;
+    const readerId = document.getElementById('filter-reader').value;
+    const onlyActive = document.getElementById('filter-active').checked;
+
+    let url = `/api/loans?page=${page}&size=${pageSize}`;
+    if (readerId) url += `&reader_id=${readerId}`;
+    if (onlyActive) url += `&only_active=true`;
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('loans-table').style.display = 'none';
+
+    try {
+        const resp = await fetch(url, { credentials: 'same-origin' });
+        if (resp.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+        const data = await resp.json();
+        renderLoans(data);
+    } catch (e) {
+        document.getElementById('loading').textContent = 'Ошибка: ' + e;
+    }
+}
+
+function renderLoans(data) {
+    const tbody = document.getElementById('loans-body');
+    tbody.innerHTML = '';
+
+    if (data.items.length === 0) {
+        document.getElementById('loading').textContent = 'Нет выдач.';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('loans-table').style.display = 'none';
+        renderPagination(data.total, data.page, data.size);
+        return;
+    }
+
+    for (const loan of data.items) {
+        const tr = document.createElement('tr');
+
+        let status;
+        if (loan.returned_at) {
+            status = loan.is_overdue ? '<span class="overdue">Возвращена с просрочкой</span>' : 'Возвращена';
+        } else {
+            status = loan.is_overdue ? '<span class="overdue">Просрочена</span>' : 'На руках';
+        }
+
+        tr.innerHTML = `
+            <td><a href="/loans/${loan.id}">${loan.id}</a></td>
+            <td>${loan.reader_id}</td>
+            <td>${loan.copy_id}</td>
+            <td>${loan.issued_at}</td>
+            <td>${loan.due_at}</td>
+            <td>${loan.returned_at || '—'}</td>
+            <td>${status}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('loans-table').style.display = 'table';
+
+    renderPagination(data.total, data.page, data.size);
+}
+
+function renderPagination(total, page, size) {
+    const pages = Math.ceil(total / size);
+    const pag = document.getElementById('pagination');
+    pag.innerHTML = `Всего: ${total}. Страница ${page} из ${Math.max(pages, 1)}. `;
+
+    if (page > 1) {
+        pag.innerHTML += `<a href="#" onclick="loadLoans(${page - 1}); return false;">← Назад</a>`;
+    }
+    if (page < pages) {
+        pag.innerHTML += `<a href="#" onclick="loadLoans(${page + 1}); return false;">Вперёд →</a>`;
+    }
+}
+
+function applyFilter() {
+    loadLoans(1);
+}
+
+function resetFilter() {
+    document.getElementById('filter-reader').value = '';
+    document.getElementById('filter-active').checked = false;
+    loadLoans(1);
+}
+
+loadLoans(1);
+</script>
+{% endblock %}

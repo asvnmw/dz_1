@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход — Library Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; max-width: 400px; }
+        label { display: block; margin: 10px 0 5px; }
+        input { width: 100%; padding: 6px; box-sizing: border-box; }
+        button { margin-top: 15px; padding: 8px 20px; }
+        .error { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Вход в Library Service</h1>
+    <form id="login-form">
+        <label>Логин: <input type="text" id="username" value="demo" required></label>
+        <label>Пароль: <input type="password" id="password" value="demo" required></label>
+        <button type="submit">Войти</button>
+    </form>
+    <div id="error" class="error"></div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const resp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ username, password }),
+            });
+
+            if (resp.ok) {
+                window.location.href = '/loans';
+            } else {
+                document.getElementById('error').textContent = 'Неверный логин или пароль';
+            }
+        });
+    </script>
+</body>
+</html>
