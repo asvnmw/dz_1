@@ -6,12 +6,12 @@ const BASE_URL = __ENV.BASE_URL || 'http://127.0.0.1:8000';
 const errorRate = new Rate('errors');
 
 const WEIGHTS = {
-  'GET /api/loans': 20,
-  'GET /api/loans?only_active=true': 15,
-  'GET /api/loans/{id}': 15,
+  'GET /api/loans': 35,
+  'GET /api/loans?only_active=true': 20,
+  'GET /api/loans/{id}': 20,
   'GET /api/books': 10,
   'GET /api/readers': 5,
-  'GET /api/summary': 35,
+  'GET /api/summary': 10,
 };
 
 export const options = {
@@ -21,7 +21,7 @@ export const options = {
       startRate: 1,
       timeUnit: '1s',
       preAllocatedVUs: 100,
-      maxVUs: 300,
+      maxVUs: 500,
       stages: [
         { target: 1, duration: '30s' },
         { target: 2, duration: '30s' },
@@ -32,6 +32,7 @@ export const options = {
         { target: 64, duration: '30s' },
         { target: 128, duration: '30s' },
         { target: 256, duration: '30s' },
+        { target: 512, duration: '30s' },
       ],
     },
   },

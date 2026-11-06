@@ -9,8 +9,8 @@ export const options = {
       executor: 'ramping-arrival-rate',
       startRate: 1,
       timeUnit: '1s',
-      preAllocatedVUs: 20,
-      maxVUs: 100,
+      preAllocatedVUs: 50,
+      maxVUs: 200,
       stages: [
         { target: 1, duration: '30s' },
         { target: 2, duration: '30s' },
@@ -27,13 +27,15 @@ export const options = {
 };
 
 export default function () {
+  const jar = http.cookieJar();
+
   const loginRes = http.post(`${BASE_URL}/auth/login`, JSON.stringify({
     username: 'demo', password: 'demo',
-  }), { headers: { 'Content-Type': 'application/json' } });
+  }), { headers: { 'Content-Type': 'application/json' }, jar });
 
   if (loginRes.status !== 200) return;
 
-  const res = http.get(`${BASE_URL}/api/summary`);
+  const res = http.get(`${BASE_URL}/api/summary`, { jar });
 
   check(res, { 'summary status 200': (r) => r.status === 200 });
 }
