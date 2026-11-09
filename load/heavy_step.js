@@ -34,11 +34,17 @@ export function setup() {
   if (loginRes.status !== 200) {
     throw new Error(`Login failed! Status: ${loginRes.status}`);
   }
-  return { jar };
+  
+  const cookies = jar.cookiesForURL(BASE_URL);
+  return { cookies };
 }
 
 export default function (data) {
-  const jar = data.jar;
+  const jar = http.cookieJar();
+  for (const [name, value] of Object.entries(data.cookies)) {
+    jar.set(BASE_URL, name, value[0]);
+  }
+
   const res = http.get(`${BASE_URL}/api/summary`, { jar });
   check(res, { 'status 200': (r) => r.status === 200 });
   errorRate.add(res.status >= 500 ? 1 : 0);
