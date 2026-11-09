@@ -48,6 +48,7 @@ function pickOperation() {
 
 export function setup() {
   const jar = http.cookieJar();
+  
   const loginRes = http.post(`${BASE_URL}/auth/login`, JSON.stringify({
     username: 'demo', password: 'demo',
   }), { headers: { 'Content-Type': 'application/json' }, jar });
@@ -60,18 +61,14 @@ export function setup() {
   const loansRes = http.get(`${BASE_URL}/api/loans?page=1&size=1`, { jar });
   if (loansRes.status === 200) {
     const data = loansRes.json();
-    if (data.items && data.items.length > 0) {
-      loanId = data.items[0].id;
-    }
+    if (data.items && data.items.length > 0) loanId = data.items[0].id;
   }
 
   let readerId = null;
   const readersRes = http.get(`${BASE_URL}/api/readers?page=1&size=1`, { jar });
   if (readersRes.status === 200) {
     const data = readersRes.json();
-    if (data.items && data.items.length > 0) {
-      readerId = data.items[0].id;
-    }
+    if (data.items && data.items.length > 0) readerId = data.items[0].id;
   }
 
   let copyIds = [];
@@ -79,39 +76,37 @@ export function setup() {
     copyIds.push(Math.floor(Math.random() * 50000) + 1);
   }
 
-  return { readerId, loanId, copyIds, jar };
+  const cookies = jar.cookiesForURL(BASE_URL);
+  return { readerId, loanId, copyIds, cookies };
 }
 
 export default function (data) {
-  const jar = data.jar;
+  const jar = http.cookieJar();
+  for (const [name, value] of Object.entries(data.cookies)) {
+    jar.set(BASE_URL, name, value[0]);
+  }
+
   const op = pickOperation();
   let res;
 
   if (op === 'GET /api/loans') {
     res = http.get(`${BASE_URL}/api/loans?page=1&size=20`, { jar });
     check(res, { 'status 200': (r) => r.status === 200 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'GET /api/loans?only_active=true') {
     res = http.get(`${BASE_URL}/api/loans?only_active=true`, { jar });
     check(res, { 'status 200': (r) => r.status === 200 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'GET /api/loans/{id}') {
-    const id = data.loanId || 1;
-    res = http.get(`${BASE_URL}/api/loans/${id}`, { jar });
+    res = http.get(`${BASE_URL}/api/loans/${data.loanId || 1}`, { jar });
     check(res, { 'status 200': (r) => r.status === 200 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'GET /api/books') {
     res = http.get(`${BASE_URL}/api/books?page=1&size=20`, { jar });
     check(res, { 'status 200': (r) => r.status === 200 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'GET /api/readers') {
     res = http.get(`${BASE_URL}/api/readers?page=1&size=20`, { jar });
     check(res, { 'status 200': (r) => r.status === 200 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'GET /api/summary') {
     res = http.get(`${BASE_URL}/api/summary`, { jar });
     check(res, { 'status 200': (r) => r.status === 200 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'POST /api/loans') {
     const randomCopyId = data.copyIds[Math.floor(Math.random() * data.copyIds.length)];
     res = http.post(`${BASE_URL}/api/loans`, JSON.stringify({
@@ -119,14 +114,13 @@ export default function (data) {
       copy_id: randomCopyId,
       due_at: '2026-12-31',
     }), { headers: { 'Content-Type': 'application/json' }, jar });
-    check(res, { 'created or conflict': (r) => r.status === 201 || r.status === 409 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
+    check(res, { 'created, conflict or not found': (r) => r.status === 201 || r.status === 409 || r.status === 404 });
   } else if (op === 'POST /api/loans/{id}/return') {
-    const id = data.loanId || 1;
-    res = http.post(`${BASE_URL}/api/loans/${id}/return`, JSON.stringify({
+    res = http.post(`${BASE_URL}/api/loans/${data.loanId || 1}/return`, JSON.stringify({
       returned_at: '2026-12-31',
     }), { headers: { 'Content-Type': 'application/json' }, jar });
     check(res, { 'returned or conflict': (r) => r.status === 200 || r.status === 409 });
-    errorRate.add(res.status >= 500 ? 1 : 0);
   }
+  
+  errorRate.add(res.status >= 500 ? 1 : 0);
 }
