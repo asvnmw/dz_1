@@ -25,18 +25,20 @@ export const options = {
   },
 };
 
-export default function () {
+export function setup() {
   const jar = http.cookieJar();
-
   const loginRes = http.post(`${BASE_URL}/auth/login`, JSON.stringify({
     username: 'demo', password: 'demo',
   }), { headers: { 'Content-Type': 'application/json' }, jar });
 
   if (loginRes.status !== 200) {
-    errorRate.add(1);
-    return;
+    throw new Error(`Login failed! Status: ${loginRes.status}`);
   }
+  return { jar };
+}
 
+export default function (data) {
+  const jar = data.jar;
   const res = http.get(`${BASE_URL}/api/summary`, { jar });
   check(res, { 'status 200': (r) => r.status === 200 });
   errorRate.add(res.status >= 500 ? 1 : 0);

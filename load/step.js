@@ -53,11 +53,11 @@ export function setup() {
   }), { headers: { 'Content-Type': 'application/json' }, jar });
 
   if (loginRes.status !== 200) {
-    return { readerId: null, loanId: null };
+    throw new Error(`Login failed! Status: ${loginRes.status}`);
   }
 
-  const loansRes = http.get(`${BASE_URL}/api/loans?page=1&size=1`, { jar });
   let loanId = null;
+  const loansRes = http.get(`${BASE_URL}/api/loans?page=1&size=1`, { jar });
   if (loansRes.status === 200) {
     const data = loansRes.json();
     if (data.items && data.items.length > 0) {
@@ -65,8 +65,8 @@ export function setup() {
     }
   }
 
-  const readersRes = http.get(`${BASE_URL}/api/readers?page=1&size=1`, { jar });
   let readerId = null;
+  const readersRes = http.get(`${BASE_URL}/api/readers?page=1&size=1`, { jar });
   if (readersRes.status === 200) {
     const data = readersRes.json();
     if (data.items && data.items.length > 0) {
@@ -74,21 +74,16 @@ export function setup() {
     }
   }
 
-  return { readerId, loanId };
+  let copyIds = [];
+  for (let i = 0; i < 100; i++) {
+    copyIds.push(Math.floor(Math.random() * 50000) + 1);
+  }
+
+  return { readerId, loanId, copyIds, jar };
 }
 
 export default function (data) {
-  const jar = http.cookieJar();
-
-  const loginRes = http.post(`${BASE_URL}/auth/login`, JSON.stringify({
-    username: 'demo', password: 'demo',
-  }), { headers: { 'Content-Type': 'application/json' }, jar });
-
-  if (loginRes.status !== 200) {
-    errorRate.add(1);
-    return;
-  }
-
+  const jar = data.jar;
   const op = pickOperation();
   let res;
 
@@ -118,9 +113,10 @@ export default function (data) {
     check(res, { 'status 200': (r) => r.status === 200 });
     errorRate.add(res.status >= 500 ? 1 : 0);
   } else if (op === 'POST /api/loans') {
+    const randomCopyId = data.copyIds[Math.floor(Math.random() * data.copyIds.length)];
     res = http.post(`${BASE_URL}/api/loans`, JSON.stringify({
       reader_id: data.readerId || 1,
-      copy_id: 107878,
+      copy_id: randomCopyId,
       due_at: '2026-12-31',
     }), { headers: { 'Content-Type': 'application/json' }, jar });
     check(res, { 'created or conflict': (r) => r.status === 201 || r.status === 409 });
